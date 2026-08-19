@@ -61,7 +61,7 @@ const Chart = (() => {
 
   function aggregate(dailyEntries, granularity) {
     if (granularity === "day") {
-      return dailyEntries.map((e) => ({ label: shortLabel(e.date), value: e.value }));
+      return dailyEntries.map((e) => ({ label: shortLabel(e.date), value: e.value, date: e.date }));
     }
     const keyFn = granularity === "week" ? weekKey : monthKey;
     const map = new Map();
@@ -121,9 +121,13 @@ const Chart = (() => {
       const h = ((p.value - min) / range_) * (plotHeight - 10) + 6;
       const y = SVG_HEIGHT - PADDING_BOTTOM - h;
 
-      svg.appendChild(el("rect", {
+      const bar = el("rect", {
         class: "bar", x, y, width: BAR_WIDTH, height: h, rx: 4,
-      }));
+      });
+      bar.dataset.value = p.value.toFixed(1);
+      bar.dataset.label = p.label;
+      if (p.date) bar.dataset.date = p.date;
+      svg.appendChild(bar);
 
       const valueText = el("text", {
         class: "bar-value", x: x + BAR_WIDTH / 2, y: y - 6, "text-anchor": "middle",

@@ -75,6 +75,24 @@
     chartSvg.style.display = empty ? "none" : "block";
   }
 
+  chartSvg.addEventListener("click", async (e) => {
+    const bar = e.target.closest(".bar");
+    if (!bar) return;
+
+    if (!bar.dataset.date) {
+      alert('Passez en vue "7j", "15j" ou "30j" pour modifier une valeur précise.');
+      return;
+    }
+
+    const input = prompt(`Modifier la température du ${bar.dataset.label} :`, bar.dataset.value);
+    if (input === null) return;
+    const value = parseFloat(input.replace(",", "."));
+    if (Number.isNaN(value)) return;
+
+    await DB.updateReadingForDate(bar.dataset.date, value);
+    refreshChart();
+  });
+
   rangeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       rangeButtons.forEach((b) => b.classList.remove("active"));

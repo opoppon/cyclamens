@@ -62,6 +62,34 @@ const DB = (() => {
     });
   }
 
+  // Remplace le(s) relevé(s) d'un jour donné par une valeur unique corrigée.
+  async function updateReadingForDate(date, temperature) {
+    const db = await open();
+    let timestamp = null;
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      const store = tx.objectStore(STORE);
+      store.openCursor().onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (!cursor) return;
+        if (cursor.value.date === date) {
+          if (timestamp === null || cursor.value.timestamp < timestamp) timestamp = cursor.value.timestamp;
+          store.delete(cursor.primaryKey);
+        }
+        cursor.continue();
+      };
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    if (timestamp === null) timestamp = new Date(`${date}T12:00:00`).getTime();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).add({ timestamp, date, temperature });
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
   async function getAll() {
     const db = await open();
     return new Promise((resolve, reject) => {
@@ -72,5 +100,5 @@ const DB = (() => {
     });
   }
 
-  return { addReading, getAll };
+  return { addReading, updateReadingForDate, getAll };
 })();
