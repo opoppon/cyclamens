@@ -8,6 +8,13 @@
   const btnToggle = document.getElementById("btn-toggle");
   const btnReset = document.getElementById("btn-reset");
   const btnSaveTemp = document.getElementById("btn-save-temp");
+  const btnPeriod = document.getElementById("btn-period");
+
+  function showConfirm(message) {
+    saveConfirm.textContent = message;
+    saveConfirm.hidden = false;
+    setTimeout(() => { saveConfirm.hidden = true; }, 2500);
+  }
 
   const chartSvg = document.getElementById("chart-svg");
   const chartEmpty = document.getElementById("chart-empty");
@@ -59,13 +66,17 @@
 
     tempView.hidden = true;
     timerView.hidden = false;
-    saveConfirm.textContent = `Enregistré : ${value.toFixed(1)} °C`;
-    saveConfirm.hidden = false;
-    setTimeout(() => { saveConfirm.hidden = true; }, 2500);
+    showConfirm(`Enregistré : ${value.toFixed(1)} °C`);
 
     Timer.reset();
     setToggleState(false);
 
+    if (!document.getElementById("page-chart").hidden) refreshChart();
+  });
+
+  btnPeriod.addEventListener("click", async () => {
+    await DB.addPeriodDay();
+    showConfirm("Jour de règles enregistré");
     if (!document.getElementById("page-chart").hidden) refreshChart();
   });
 

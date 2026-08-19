@@ -29,18 +29,8 @@ const DB = (() => {
     return `${y}-${m}-${day}`;
   }
 
-  async function addReading(temperature) {
-    const db = await open();
-    const timestamp = Date.now();
-    const record = { timestamp, date: isoDate(timestamp), temperature };
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, "readwrite");
-      tx.objectStore(STORE).add(record);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    });
-    await pruneOld(db);
-    return record;
+  function todayKey() {
+    return isoDate(Date.now());
   }
 
   async function pruneOld(db) {
@@ -62,8 +52,9 @@ const DB = (() => {
     });
   }
 
-  // Remplace le(s) relevé(s) d'un jour donné par une valeur unique corrigée.
-  async function updateReadingForDate(date, temperature) {
+  // Remplace le(s) relevé(s) d'un jour donné par une valeur unique (température,
+  // ou null pour marquer un jour de règles). Garantit un seul enregistrement par jour.
+  async function setReadingForDate(date, temperature) {
     const db = await open();
     let timestamp = null;
     await new Promise((resolve, reject) => {
@@ -88,6 +79,19 @@ const DB = (() => {
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
     });
+    await pruneOld(db);
+  }
+
+  function addReading(temperature) {
+    return setReadingForDate(todayKey(), temperature);
+  }
+
+  function addPeriodDay() {
+    return setReadingForDate(todayKey(), null);
+  }
+
+  function updateReadingForDate(date, temperature) {
+    return setReadingForDate(date, temperature);
   }
 
   async function getAll() {
@@ -100,5 +104,5 @@ const DB = (() => {
     });
   }
 
-  return { addReading, updateReadingForDate, getAll };
+  return { addReading, addPeriodDay, updateReadingForDate, getAll };
 })();

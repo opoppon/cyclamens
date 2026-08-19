@@ -31,16 +31,25 @@ const Chart = (() => {
   }
 
   // Regroupe les relevés (potentiellement plusieurs par jour) en moyenne journalière.
+  // Un relevé à température null marque un jour de règles (pas de courbe ce jour-là).
   function groupByDay(readings) {
     const map = new Map();
     for (const r of readings) {
-      const bucket = map.get(r.date) || { sum: 0, count: 0 };
-      bucket.sum += r.temperature;
-      bucket.count += 1;
+      const bucket = map.get(r.date) || { sum: 0, count: 0, isPeriod: false };
+      if (r.temperature === null) {
+        bucket.isPeriod = true;
+      } else {
+        bucket.sum += r.temperature;
+        bucket.count += 1;
+      }
       map.set(r.date, bucket);
     }
     return [...map.entries()]
-      .map(([date, { sum, count }]) => ({ date, value: sum / count }))
+      .map(([date, { sum, count, isPeriod }]) => ({
+        date,
+        value: count > 0 ? sum / count : null,
+        isPeriod,
+      }))
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
@@ -61,11 +70,14 @@ const Chart = (() => {
 
   function aggregate(dailyEntries, granularity) {
     if (granularity === "day") {
-      return dailyEntries.map((e) => ({ label: shortLabel(e.date), value: e.value, date: e.date }));
+      return dailyEntries.map((e) => ({
+        label: shortLabel(e.date), value: e.value, date: e.date, isPeriod: e.isPeriod,
+      }));
     }
     const keyFn = granularity === "week" ? weekKey : monthKey;
     const map = new Map();
     for (const e of dailyEntries) {
+      if (e.value === null) continue; // jour de règles : exclu de la moyenne
       const key = keyFn(e.date);
       const bucket = map.get(key) || { sum: 0, count: 0 };
       bucket.sum += e.value;
@@ -118,12 +130,12 @@ const Chart = (() => {
 
     if (points.length === 0) return { empty: true };
 
-    const ovulationEndDate = findOvulationEndDate(daily);
+    const ovulationEndDate = findOvulationEndDate(daily.filter((e) => e.value !== null));
 
     const plotHeight = SVG_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
-    const values = points.map((p) => p.value);
-    let min = Math.min(...values);
-    let max = Math.max(...values);
+    const values = points.map((p) => p.value).filter((v) => v !== null);
+    let min = values.length ? Math.min(...values) : 0;
+    let max = values.length ? Math.max(...values) : 1;
     if (min === max) { min -= 1; max += 1; }
     const range_ = max - min;
 
@@ -140,23 +152,33 @@ const Chart = (() => {
 
     points.forEach((p, i) => {
       const x = BAR_GAP + i * (BAR_WIDTH + BAR_GAP);
-      const h = ((p.value - min) / range_) * (plotHeight - 10) + 6;
-      const y = SVG_HEIGHT - PADDING_BOTTOM - h;
 
-      const isOvulationEnd = p.date && p.date === ovulationEndDate;
-      const bar = el("rect", {
-        class: isOvulationEnd ? "bar bar-ovulation" : "bar", x, y, width: BAR_WIDTH, height: h, rx: 4,
-      });
-      bar.dataset.value = p.value.toFixed(1);
-      bar.dataset.label = p.label;
-      if (p.date) bar.dataset.date = p.date;
-      svg.appendChild(bar);
+      if (p.isPeriod) {
+        const drop = el("text", {
+          class: "bar-period-icon",
+          x: x + BAR_WIDTH / 2, y: SVG_HEIGHT - PADDING_BOTTOM - 6, "text-anchor": "middle",
+        });
+        drop.textContent = "🩸";
+        svg.appendChild(drop);
+      } else {
+        const h = ((p.value - min) / range_) * (plotHeight - 10) + 6;
+        const y = SVG_HEIGHT - PADDING_BOTTOM - h;
 
-      const valueText = el("text", {
-        class: "bar-value", x: x + BAR_WIDTH / 2, y: y - 6, "text-anchor": "middle",
-      });
-      valueText.textContent = p.value.toFixed(1);
-      svg.appendChild(valueText);
+        const isOvulationEnd = p.date && p.date === ovulationEndDate;
+        const bar = el("rect", {
+          class: isOvulationEnd ? "bar bar-ovulation" : "bar", x, y, width: BAR_WIDTH, height: h, rx: 4,
+        });
+        bar.dataset.value = p.value.toFixed(1);
+        bar.dataset.label = p.label;
+        if (p.date) bar.dataset.date = p.date;
+        svg.appendChild(bar);
+
+        const valueText = el("text", {
+          class: "bar-value", x: x + BAR_WIDTH / 2, y: y - 6, "text-anchor": "middle",
+        });
+        valueText.textContent = p.value.toFixed(1);
+        svg.appendChild(valueText);
+      }
 
       const labelText = el("text", {
         class: "bar-label", x: x + BAR_WIDTH / 2, y: SVG_HEIGHT - PADDING_BOTTOM + 16, "text-anchor": "middle",
