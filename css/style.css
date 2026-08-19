@@ -112,6 +112,7 @@ h1 {
   font-size: 1.4rem;
   background: var(--surface-2);
   color: var(--text-dim);
+  margin-top: 56px;
 }
 
 .icon-play {
