@@ -80,6 +80,26 @@ const Chart = (() => {
       }));
   }
 
+  // Règle "3 sur 6" : détecte la fin de l'ovulation (3 jours consécutifs
+  // au-dessus de la plus haute des 6 températures précédentes, dont un jour
+  // à +0,2°C au moins). Retourne la date du 1er jour confirmé, ou null.
+  const BASELINE_WINDOW = 6;
+  const RISE_THRESHOLD = 0.2;
+
+  function findOvulationEndDate(dailyEntries) {
+    for (let i = BASELINE_WINDOW; i <= dailyEntries.length - 3; i++) {
+      const baselineWindow = dailyEntries.slice(i - BASELINE_WINDOW, i);
+      const baseline = Math.max(...baselineWindow.map((e) => e.value));
+      const rise = dailyEntries.slice(i, i + 3);
+
+      const allAbove = rise.every((e) => e.value > baseline);
+      const hasStrongRise = rise.some((e) => e.value >= baseline + RISE_THRESHOLD);
+
+      if (allAbove && hasStrongRise) return rise[2].date;
+    }
+    return null;
+  }
+
   function clear(svg) {
     while (svg.firstChild) svg.removeChild(svg.firstChild);
   }
@@ -97,6 +117,8 @@ const Chart = (() => {
     const points = aggregate(filtered, granularityFor(range));
 
     if (points.length === 0) return { empty: true };
+
+    const ovulationEndDate = findOvulationEndDate(daily);
 
     const plotHeight = SVG_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
     const values = points.map((p) => p.value);
@@ -121,8 +143,9 @@ const Chart = (() => {
       const h = ((p.value - min) / range_) * (plotHeight - 10) + 6;
       const y = SVG_HEIGHT - PADDING_BOTTOM - h;
 
+      const isOvulationEnd = p.date && p.date === ovulationEndDate;
       const bar = el("rect", {
-        class: "bar", x, y, width: BAR_WIDTH, height: h, rx: 4,
+        class: isOvulationEnd ? "bar bar-ovulation" : "bar", x, y, width: BAR_WIDTH, height: h, rx: 4,
       });
       bar.dataset.value = p.value.toFixed(1);
       bar.dataset.label = p.label;

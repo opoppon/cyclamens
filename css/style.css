@@ -206,6 +206,7 @@ h1 {
 }
 
 .bar { fill: var(--accent); cursor: pointer; }
+.bar-ovulation { fill: var(--success); }
 .bar-label { fill: var(--text-dim); font-size: 10px; }
 .bar-value { fill: var(--text); font-size: 10px; font-weight: 600; }
 .axis-line { stroke: var(--surface-2); stroke-width: 1; }
