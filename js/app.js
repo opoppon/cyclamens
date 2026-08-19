@@ -5,8 +5,7 @@
   const tempInput = document.getElementById("temp-input");
   const saveConfirm = document.getElementById("save-confirm");
 
-  const btnStart = document.getElementById("btn-start");
-  const btnPause = document.getElementById("btn-pause");
+  const btnToggle = document.getElementById("btn-toggle");
   const btnReset = document.getElementById("btn-reset");
   const btnSaveTemp = document.getElementById("btn-save-temp");
 
@@ -17,9 +16,17 @@
 
   // ---------- Minuteur ----------
 
+  function setToggleState(running) {
+    btnToggle.innerHTML = running
+      ? '<span class="icon-pause"><span></span><span></span></span>'
+      : '<span class="icon-play"></span>';
+    btnToggle.setAttribute("aria-label", running ? "Pause" : "Démarrer");
+  }
+
   Timer.init({
     onTick: (text) => { timerDisplay.textContent = text; },
     onDone: () => {
+      setToggleState(false);
       timerView.hidden = true;
       tempView.hidden = false;
       tempInput.value = "";
@@ -27,22 +34,19 @@
     },
   });
 
-  btnStart.addEventListener("click", () => {
-    Timer.start();
-    btnStart.disabled = true;
-    btnPause.disabled = false;
-  });
-
-  btnPause.addEventListener("click", () => {
-    Timer.pause();
-    btnStart.disabled = false;
-    btnPause.disabled = true;
+  btnToggle.addEventListener("click", () => {
+    if (Timer.isRunning()) {
+      Timer.pause();
+      setToggleState(false);
+    } else {
+      Timer.start();
+      setToggleState(true);
+    }
   });
 
   btnReset.addEventListener("click", () => {
     Timer.reset();
-    btnStart.disabled = false;
-    btnPause.disabled = true;
+    setToggleState(false);
   });
 
   btnSaveTemp.addEventListener("click", async () => {
@@ -60,8 +64,7 @@
     setTimeout(() => { saveConfirm.hidden = true; }, 2500);
 
     Timer.reset();
-    btnStart.disabled = false;
-    btnPause.disabled = true;
+    setToggleState(false);
 
     if (!document.getElementById("page-chart").hidden) refreshChart();
   });
