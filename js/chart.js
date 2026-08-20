@@ -168,7 +168,7 @@ const Chart = (() => {
         const bar = el("rect", {
           class: isOvulationEnd ? "bar bar-ovulation" : "bar", x, y, width: BAR_WIDTH, height: h, rx: 4,
         });
-        bar.dataset.value = p.value.toFixed(1);
+        bar.dataset.value = p.value.toFixed(2);
         bar.dataset.label = p.label;
         if (p.date) bar.dataset.date = p.date;
         svg.appendChild(bar);
@@ -176,7 +176,7 @@ const Chart = (() => {
         const valueText = el("text", {
           class: "bar-value", x: x + BAR_WIDTH / 2, y: y - 6, "text-anchor": "middle",
         });
-        valueText.textContent = p.value.toFixed(1);
+        valueText.textContent = p.value.toFixed(2);
         svg.appendChild(valueText);
       }
 

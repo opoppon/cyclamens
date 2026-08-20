@@ -66,7 +66,7 @@
 
     tempView.hidden = true;
     timerView.hidden = false;
-    showConfirm(`Enregistré : ${value.toFixed(1)} °C`);
+    showConfirm(`Enregistré : ${value.toFixed(2)} °C`);
 
     Timer.reset();
     setToggleState(false);
