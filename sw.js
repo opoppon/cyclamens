@@ -1,7 +1,7 @@
 // Service worker "cache-first" : après la première installation, l'app se
 // recharge uniquement depuis le cache. Incrémenter CACHE_VERSION pour forcer
 // la mise à jour des fichiers lors d'un déploiement.
-const CACHE_VERSION = "cyclamens-v260819220001";
+const CACHE_VERSION = "cyclamens-v26082001";
 
 const ASSETS = [
   "./",
